@@ -1,27 +1,45 @@
 (function() {
   // Entry Point
   const apiKeys = KEYS; // Keys should be a global object
+  const STATE = {
+    weather: {
+      isGood: -1,
+    },
+  };
+
+  createHandlers();
   init();
 
   // Function Definitions
+  function createHandlers() {
+    $('.btn-yes').click(() => (STATE.weather.isGood = 1));
+    $('.btn-no').click(() => (STATE.weather.isGood = 0));
+  }
+
   async function init() {
-    const data = await requestWeatherInfo()
-    renderWeatherInfo(data);
+    try {
+      const data = await requestWeatherInfo();
+      renderWeatherInfo(data);
+      const reaction = await getUserReaction();
+      renderReactionMessage(reaction);
+    } catch (err) {
+      handleUserReactionTimeout(err);
+    }
   }
 
   async function requestWeatherInfo() {
     const urlBase = 'http://api.openweathermap.org/data/2.5/weather';
     const query = `?q=Pittsburgh&APPID=${apiKeys.weather}`;
     const request = new Request(urlBase + query);
-    const response  =  await fetch(request, {
-      method: "GET"
+    const response = await fetch(request, {
+      method: 'GET',
     });
     return response.json();
   }
 
   function renderWeatherInfo(weatherData) {
     const weatherInfoElement = document.getElementsByClassName(
-      "weather-info"
+      'weather-info',
     )[0];
     weatherInfoElement.innerHTML = generateWeatherInfoHtmlTemplate(weatherData);
   }
@@ -44,6 +62,36 @@
 
   function getWeatherIconUrl(iconCode) {
     return `http://openweathermap.org/img/w/${iconCode}.png`;
+  }
+
+  function getUserReaction() {
+    return new Promise((resolve, reject) => {
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        if (count >= 20) {
+          clearInterval(interval);
+          return reject(new Error('Waiting for user reaction has timed out.'));
+        }
+
+        if (STATE.weather.isGood !== -1) {
+          return resolve(STATE.weather.isGood);
+        }
+      }, 250);
+    });
+  }
+
+  function renderReactionMessage(reaction) {
+    console.log(reaction);
+    if (reaction) {
+      $('.reaction-text').text("That's great! Enjoy your day!");
+      return;
+    }
+    $('.reaction-text').text("Oh well, but it's still a good day, right?");
+  }
+
+  function handleUserReactionTimeout(err) {
+    $('.reaction-text').text(err.message);
   }
 
   // End Function Definitions

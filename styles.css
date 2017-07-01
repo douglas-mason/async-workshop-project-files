@@ -18,3 +18,9 @@ ul {
   display: flex;
   align-items: center;
 }
+
+button {
+  background-color: lightgray;
+  padding: 10px;
+  margin-right: 10px;
+}
